@@ -1,0 +1,68 @@
+<!-- index.html (Retro Revival wrapper) -->
+<!--
+  Full-screen wrapper that embeds the Retro Revival Apps Script web app in an
+  iframe. Google injects a "This application was created by a Google Apps Script
+  user" banner on the outer script.google.com page; embedding the /exec URL here
+  hides that banner IF Google's frame policy allows the embed.
+
+  SETUP:
+  1. This embeds the /dev URL, so the app is always the latest saved version
+     (no redeploying needed). The /dev URL only loads for Google accounts that
+     are EDITORS on the Apps Script project — both you and your husband must be
+     signed into an editor account on the device viewing this page.
+  2. Host this file on GitHub Pages (e.g. assets repo as retro/index.html), then
+     open the GitHub Pages URL instead of the script.google.com URL.
+
+  NOTE: If the iframe shows blank, Google is blocking the embed (X-Frame-Options)
+  or the viewer isn't signed into an editor account. This is reversible —
+  nothing about the app itself changes.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Retro Revival Inventory</title>
+    <link rel="icon" href="https://chrisl18rel.github.io/assets/retro-revival-logo.png">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        /* Cream background matches the app so any load gap blends in. */
+        background: #FFF0CB;
+        overflow: hidden;
+      }
+      /* The iframe fills the entire viewport with no chrome of its own. */
+      #appFrame {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+      /* Simple centered loading note shown until the iframe paints over it. */
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #4E9798;
+        font-size: 16px;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">Loading Retro Revival Inventory…</div>
+    <iframe
+      id="appFrame"
+      title="Retro Revival Inventory"
+      src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/dev"
+      allow="clipboard-read; clipboard-write"
+      onload="document.getElementById('loading').style.display='none';"></iframe>
+  </body>
+</html>
