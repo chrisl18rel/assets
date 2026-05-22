@@ -6,16 +6,15 @@
   hides that banner IF Google's frame policy allows the embed.
 
   SETUP:
-  1. This embeds the /dev URL, so the app is always the latest saved version
-     (no redeploying needed). The /dev URL only loads for Google accounts that
-     are EDITORS on the Apps Script project — both you and your husband must be
-     signed into an editor account on the device viewing this page.
+  1. This embeds the /exec URL. The /dev URL does NOT work inside a cross-origin
+     iframe — Google blocks it (you get "You need access" / 403), even for
+     editors. So the iframe must use /exec. Updates appear after you publish a
+     new deployment version (Deploy > Manage deployments > edit > new version).
   2. Host this file on GitHub Pages (e.g. assets repo as retro/index.html), then
      open the GitHub Pages URL instead of the script.google.com URL.
 
-  NOTE: If the iframe shows blank, Google is blocking the embed (X-Frame-Options)
-  or the viewer isn't signed into an editor account. This is reversible —
-  nothing about the app itself changes.
+  NOTE: If the iframe shows blank, Google is blocking the embed. This is
+  reversible — nothing about the app itself changes.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -61,7 +60,7 @@
     <iframe
       id="appFrame"
       title="Retro Revival Inventory"
-      src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/dev"
+      src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/exec"
       allow="clipboard-read; clipboard-write"
       onload="document.getElementById('loading').style.display='none';"></iframe>
   </body>
