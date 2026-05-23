@@ -142,7 +142,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v1.2</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v1.3</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
@@ -162,6 +162,19 @@
 
     <script>
       (function () {
+        // Only enable pull-to-refresh and auto-refresh on touch devices
+        // (iPhone/iPad). On a desktop browser none of this runs, so switching
+        // tabs/windows never triggers a reload and there is no pull gesture.
+        var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) {
+          // Desktop: hide the pull indicator/zone and do nothing else.
+          var z = document.getElementById('ptrZone');
+          var ind = document.getElementById('ptrIndicator');
+          if (z) z.style.display = 'none';
+          if (ind) ind.style.display = 'none';
+          return;
+        }
+
         var frame = document.getElementById('appFrame');
         var zone = document.getElementById('ptrZone');
         var indicator = document.getElementById('ptrIndicator');
