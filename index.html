@@ -3,24 +3,29 @@
   Full-screen wrapper that embeds the Retro Revival Apps Script web app in an
   iframe. Google injects a "This application was created by a Google Apps Script
   user" banner on the outer script.google.com page; embedding the /exec URL here
-  hides that banner IF Google's frame policy allows the embed.
+  hides that banner.
+
+  Includes a custom PULL-TO-REFRESH: when launched from the home screen in
+  standalone (app) mode there is no browser pull-to-refresh, so this wrapper
+  provides its own. Pulling down from the top fills a circular spinner; once
+  pulled past the threshold and released, the iframe reloads to fetch the latest
+  data. (We can only reload the iframe, not read scrolling inside it, because the
+  app is on a different domain — so the pull must start from the very top.)
 
   SETUP:
   1. This embeds the /exec URL. The /dev URL does NOT work inside a cross-origin
-     iframe — Google blocks it (you get "You need access" / 403), even for
-     editors. So the iframe must use /exec. Updates appear after you publish a
-     new deployment version (Deploy > Manage deployments > edit > new version).
-  2. Host this file on GitHub Pages (e.g. assets repo as retro/index.html), then
-     open the GitHub Pages URL instead of the script.google.com URL.
-
-  NOTE: If the iframe shows blank, Google is blocking the embed. This is
-  reversible — nothing about the app itself changes.
+     iframe — Google blocks it. So the iframe must use /exec. Updates appear
+     after you publish a new deployment version
+     (Deploy > Manage deployments > edit > new version), and after the user
+     pulls to refresh (or relaunches) the app.
+  2. Host this file on GitHub Pages (assets repo as retro/index.html), then open
+     the GitHub Pages URL instead of the script.google.com URL.
 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>Retro Revival Inventory</title>
 
     <!-- Favicon (browser tab) -->
@@ -36,12 +41,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Retro Revival">
     <style>
+      :root {
+        --teal: #76B6B3;
+        --teal-deep: #4E9798;
+        --cream: #FFF0CB;
+      }
       html, body {
         margin: 0;
         padding: 0;
         height: 100%;
-        /* Cream background matches the app so any load gap blends in. */
-        background: #FFF0CB;
+        background: var(--cream);
         overflow: hidden;
       }
       /* The iframe fills the entire viewport with no chrome of its own. */
@@ -53,7 +62,7 @@
         border: 0;
         display: block;
       }
-      /* Simple centered loading note shown until the iframe paints over it. */
+      /* Centered loading note shown until the iframe paints over it. */
       #loading {
         position: fixed;
         inset: 0;
@@ -61,19 +70,189 @@
         align-items: center;
         justify-content: center;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #4E9798;
+        color: var(--teal-deep);
         font-size: 16px;
         letter-spacing: 0.04em;
+        background: var(--cream);
+        z-index: 5;
       }
+
+      /* ===== Pull-to-refresh ===== */
+      /* A transparent strip across the very top that catches the pull gesture.
+         It sits above the iframe only in its thin band so the rest of the app
+         stays fully interactive. */
+      #ptrZone {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        z-index: 10;
+        /* Transparent and non-blocking until a pull begins. */
+        pointer-events: none;
+      }
+      /* The spinner indicator that descends from the top as you pull. */
+      #ptrIndicator {
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -54px);
+        width: 44px;
+        height: 44px;
+        z-index: 11;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(0,13,18,0.18);
+        opacity: 0;
+      }
+      #ptrIndicator svg { width: 26px; height: 26px; display: block; }
+      /* The progress ring arc that "fills in" as you pull. */
+      #ptrArc {
+        fill: none;
+        stroke: var(--teal-deep);
+        stroke-width: 4;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+      #ptrTrack {
+        fill: none;
+        stroke: rgba(78,151,152,0.18);
+        stroke-width: 4;
+      }
+      /* When actively refreshing, the whole indicator spins. */
+      #ptrIndicator.spinning { animation: ptrSpin 0.8s linear infinite; }
+      @keyframes ptrSpin { to { transform: translate(-50%, 70px) rotate(360deg); } }
     </style>
   </head>
   <body>
     <div id="loading">Loading Retro Revival Inventory…</div>
+
+    <!-- Pull-to-refresh gesture catcher + indicator -->
+    <div id="ptrZone"></div>
+    <div id="ptrIndicator">
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <circle id="ptrTrack" cx="22" cy="22" r="18"></circle>
+        <circle id="ptrArc" cx="22" cy="22" r="18"></circle>
+      </svg>
+    </div>
+
     <iframe
       id="appFrame"
       title="Retro Revival Inventory"
       src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/exec"
       allow="clipboard-read; clipboard-write"
       onload="document.getElementById('loading').style.display='none';"></iframe>
+
+    <script>
+      (function () {
+        var frame = document.getElementById('appFrame');
+        var zone = document.getElementById('ptrZone');
+        var indicator = document.getElementById('ptrIndicator');
+        var arc = document.getElementById('ptrArc');
+
+        // Circle circumference for the progress arc (r = 18).
+        var CIRC = 2 * Math.PI * 18;
+        arc.style.strokeDasharray = CIRC;
+        arc.style.strokeDashoffset = CIRC; // start empty
+
+        var THRESHOLD = 80;   // px of pull needed to trigger a refresh
+        var MAX_PULL = 110;   // px where the indicator is fully down
+        var startY = null;
+        var pulling = false;
+        var refreshing = false;
+
+        function setProgress(p) {
+          // p is 0..1; fill the arc and slide the indicator down.
+          if (p < 0) p = 0;
+          if (p > 1) p = 1;
+          arc.style.strokeDashoffset = CIRC * (1 - p);
+          indicator.style.opacity = p > 0.02 ? 1 : 0;
+          var drop = -54 + p * (70 + 54); // from hidden (-54) toward 70px down
+          indicator.style.transform = 'translate(-50%, ' + drop + 'px)';
+        }
+
+        function reset() {
+          indicator.classList.remove('spinning');
+          indicator.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+          setProgress(0);
+          setTimeout(function () { indicator.style.transition = ''; }, 260);
+        }
+
+        function doRefresh() {
+          refreshing = true;
+          indicator.style.transition = '';
+          // Lock the indicator at the top-spin position and spin it.
+          arc.style.strokeDashoffset = CIRC * 0.25; // a partial arc looks like a spinner
+          indicator.style.opacity = 1;
+          indicator.classList.add('spinning');
+          // Reload the app inside the iframe to fetch the latest data.
+          try {
+            frame.src = frame.src;
+          } catch (e) {
+            window.location.reload();
+          }
+          // When the iframe finishes loading, stop the spinner.
+          frame.addEventListener('load', function onLoad() {
+            frame.removeEventListener('load', onLoad);
+            refreshing = false;
+            reset();
+          });
+          // Safety: stop spinning after 8s even if load doesn't fire.
+          setTimeout(function () {
+            if (refreshing) { refreshing = false; reset(); }
+          }, 8000);
+        }
+
+        // Touch handlers live on the body; we only act when the gesture begins
+        // at the very top of the screen (the only place we can detect, since the
+        // iframe's internal scroll is cross-origin and invisible to us).
+        document.body.addEventListener('touchstart', function (e) {
+          if (refreshing) return;
+          if (e.touches.length !== 1) return;
+          // Only start a pull if the touch begins near the top edge.
+          if (e.touches[0].clientY <= 60) {
+            startY = e.touches[0].clientY;
+            pulling = false;
+            zone.style.pointerEvents = 'auto';
+          } else {
+            startY = null;
+          }
+        }, { passive: true });
+
+        document.body.addEventListener('touchmove', function (e) {
+          if (refreshing || startY === null) return;
+          var dy = e.touches[0].clientY - startY;
+          if (dy > 0) {
+            pulling = true;
+            // Apply a little resistance so it feels natural.
+            var eff = Math.min(dy, MAX_PULL);
+            setProgress(eff / THRESHOLD);
+            // Prevent the rubber-band scroll while pulling the indicator.
+            if (e.cancelable) e.preventDefault();
+          }
+        }, { passive: false });
+
+        document.body.addEventListener('touchend', function () {
+          if (refreshing) return;
+          zone.style.pointerEvents = 'none';
+          if (pulling) {
+            // Did we pull far enough?
+            var offset = parseFloat(arc.style.strokeDashoffset);
+            var progress = 1 - (offset / CIRC);
+            if (progress >= 1) {
+              doRefresh();
+            } else {
+              reset();
+            }
+          }
+          startY = null;
+          pulling = false;
+        }, { passive: true });
+      })();
+    </script>
   </body>
 </html>
