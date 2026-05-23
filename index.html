@@ -59,29 +59,43 @@
       html, body {
         margin: 0;
         padding: 0;
-        height: 100%;
-        /* Dark backing so any strip the iframe doesn't cover (e.g. the iOS
-           keyboard-accessory zone in the standalone app) shows dark, not the
-           old beige. The iframe paints over this for normal content. */
-        background: var(--ink);
+        height: 100vh;
+        height: 100dvh;
+        background: var(--cream);
         overflow: hidden;
       }
-      /* The iframe fills the entire viewport with no chrome of its own. */
+      /* The iframe fills the entire viewport with no chrome of its own. It must
+         use the LARGE/dynamic viewport height: in the iOS standalone app a plain
+         100% (or innerHeight) leaves the iframe short of the physical screen
+         bottom, exposing the wrapper background there. */
       #appFrame {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         width: 100%;
-        height: 100%;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100%;
         border: 0;
         display: block;
       }
-      /* Centered loading note shown until the iframe paints over it. */
+      /* Centered loading note shown until the iframe paints over it. Uses an
+         explicit dvh height (not inset:0) so it has a stable size on first paint
+         and the centered text doesn't start off-center then jump to center as
+         the viewport finalizes. */
       #loading {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
+        text-align: center;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--teal-deep);
         font-size: 16px;
@@ -146,7 +160,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v1.3</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.4</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
@@ -163,6 +177,31 @@
       src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/exec"
       allow="clipboard-read; clipboard-write"
       onload="document.getElementById('loading').style.display='none';"></iframe>
+
+    <script>
+      // Force the iframe to fill the full physical screen height. In the iOS
+      // standalone app, window.innerHeight / 100% can be SHORTER than the actual
+      // screen, leaving the iframe short of the bottom and exposing the wrapper
+      // background. We size to the largest height available and re-apply on
+      // resize/orientation/return so the iframe always reaches the screen bottom.
+      (function () {
+        var frame = document.getElementById('appFrame');
+        function fitFrame() {
+          if (!frame) return;
+          var h = Math.max(
+            window.innerHeight || 0,
+            document.documentElement ? document.documentElement.clientHeight : 0,
+            (window.screen && window.screen.height) ? window.screen.height : 0
+          );
+          if (h > 0) frame.style.height = h + 'px';
+        }
+        fitFrame();
+        window.addEventListener('resize', fitFrame);
+        window.addEventListener('orientationchange', function(){ setTimeout(fitFrame, 200); });
+        window.addEventListener('pageshow', fitFrame);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', fitFrame);
+      })();
+    </script>
 
     <script>
       (function () {
