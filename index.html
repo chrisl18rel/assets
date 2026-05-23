@@ -54,12 +54,16 @@
         --teal: #76B6B3;
         --teal-deep: #4E9798;
         --cream: #FFF0CB;
+        --ink: #000D12;
       }
       html, body {
         margin: 0;
         padding: 0;
         height: 100%;
-        background: var(--cream);
+        /* Dark backing so any strip the iframe doesn't cover (e.g. the iOS
+           keyboard-accessory zone in the standalone app) shows dark, not the
+           old beige. The iframe paints over this for normal content. */
+        background: var(--ink);
         overflow: hidden;
       }
       /* The iframe fills the entire viewport with no chrome of its own. */
