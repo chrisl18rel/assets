@@ -27,6 +27,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+
+    <!-- Discourage caching so updates to this wrapper show up without having to
+         clear Safari's cache. (The home-screen standalone app caches the HTML
+         aggressively; these tell it to always revalidate.) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>Retro Revival Inventory</title>
 
     <!-- Favicon (browser tab) -->
@@ -79,22 +87,23 @@
       }
 
       /* ===== Pull-to-refresh ===== */
-      /* A strip across the very top that catches the pull gesture. It MUST stay
+      /* A strip across the top that catches the pull gesture. It MUST stay
          pointer-active (a cross-origin iframe swallows touches, so the only
-         touches we can read are ones that land on this overlay strip, above the
-         iframe). It's thin so the rest of the app stays interactive; while a
-         pull is in progress JS expands it to cover the screen so the drag keeps
-         registering. */
+         touches we can read land on this overlay above the iframe).
+         It starts BELOW the status bar / system-gesture edge (top ~44px owns
+         Control Center & Notification Center) and is tall enough (down to
+         ~190px) to be an easy target over the app's banner. While a pull is in
+         progress JS expands it full-screen so the drag keeps registering. */
       #ptrZone {
         position: fixed;
-        top: 0;
+        top: env(safe-area-inset-top, 44px);
         left: 0;
         right: 0;
-        height: 70px;
+        height: 95px;
         z-index: 10;
         background: transparent;
       }
-      #ptrZone.expanded { bottom: 0; height: auto; }
+      #ptrZone.expanded { top: 0; bottom: 0; height: auto; }
       /* The spinner indicator that descends from the top as you pull. */
       #ptrIndicator {
         position: fixed;
@@ -133,7 +142,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v1.0</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v1.1</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
