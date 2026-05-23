@@ -5,12 +5,13 @@
   user" banner on the outer script.google.com page; embedding the /exec URL here
   hides that banner.
 
-  Includes a custom PULL-TO-REFRESH: when launched from the home screen in
-  standalone (app) mode there is no browser pull-to-refresh, so this wrapper
-  provides its own. Pulling down from the top fills a circular spinner; once
-  pulled past the threshold and released, the iframe reloads to fetch the latest
-  data. (We can only reload the iframe, not read scrolling inside it, because the
-  app is on a different domain — so the pull must start from the very top.)
+  Includes a custom PULL-TO-REFRESH plus AUTO-REFRESH:
+  - Pull down from the top to manually refresh (fills a spinner, then reloads).
+  - Auto-refresh when the app returns to the foreground (relaunch or app-switch)
+    after more than a few seconds away, so it always shows current data.
+  - Auto-refresh if the session has been open/idle for 30+ minutes, on return.
+  We can only reload the iframe, not read scrolling inside it, because the app is
+  on a different domain.
 
   SETUP:
   1. This embeds the /exec URL. The /dev URL does NOT work inside a cross-origin
@@ -252,6 +253,48 @@
           startY = null;
           pulling = false;
         }, { passive: true });
+
+        // ===== Auto-refresh: foreground return + idle timeout =====
+        // Reload the app's data when the user comes back to it, so a relaunch or
+        // returning from another app always shows current information, and a
+        // session left idle for a while is never stale.
+        var IDLE_MS = 30 * 60 * 1000;     // refresh if away/idle 30+ minutes
+        var QUICK_GLANCE_MS = 3 * 1000;   // ignore very brief app-switches
+        var hiddenAt = null;
+        var lastRefresh = Date.now();
+
+        function maybeRefreshOnReturn() {
+          if (refreshing) return;
+          var now = Date.now();
+          var awayFor = hiddenAt ? (now - hiddenAt) : 0;
+          var sinceRefresh = now - lastRefresh;
+
+          // Refresh if: returned after being away more than a quick glance,
+          // OR the session has simply been open/idle past the idle threshold.
+          if (awayFor > QUICK_GLANCE_MS || sinceRefresh > IDLE_MS) {
+            lastRefresh = now;
+            doRefresh();
+          }
+        }
+
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'hidden') {
+            hiddenAt = Date.now();
+          } else if (document.visibilityState === 'visible') {
+            maybeRefreshOnReturn();
+            hiddenAt = null;
+          }
+        });
+
+        // iOS standalone apps fire pageshow on resume; covers cases where
+        // visibilitychange doesn't reliably fire.
+        window.addEventListener('pageshow', function (e) {
+          if (e.persisted) maybeRefreshOnReturn();
+        });
+
+        // Keep lastRefresh current whenever a manual pull-to-refresh happens too,
+        // so the idle timer measures from the most recent actual reload.
+        frame.addEventListener('load', function () { lastRefresh = Date.now(); });
       })();
     </script>
   </body>
