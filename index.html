@@ -59,25 +59,16 @@
       html, body {
         margin: 0;
         padding: 0;
-        height: 100vh;
-        height: 100dvh;
+        height: 100%;
         background: var(--cream);
         overflow: hidden;
       }
-      /* The iframe fills the entire viewport with no chrome of its own. It must
-         use the LARGE/dynamic viewport height: in the iOS standalone app a plain
-         100% (or innerHeight) leaves the iframe short of the physical screen
-         bottom, exposing the wrapper background there. */
+      /* The iframe fills the entire viewport with no chrome of its own. */
       #appFrame {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
         width: 100%;
-        height: 100vh;
-        height: 100dvh;
-        min-height: 100%;
+        height: 100%;
         border: 0;
         display: block;
       }
@@ -177,31 +168,6 @@
       src="https://script.google.com/macros/s/AKfycbz7NawIYpc72UsfWvm8Tz0I77UTHx5ane3iV22oQAlG1Lh0olmscrmtPttxCyYaCUhfcw/exec"
       allow="clipboard-read; clipboard-write"
       onload="document.getElementById('loading').style.display='none';"></iframe>
-
-    <script>
-      // Force the iframe to fill the full physical screen height. In the iOS
-      // standalone app, window.innerHeight / 100% can be SHORTER than the actual
-      // screen, leaving the iframe short of the bottom and exposing the wrapper
-      // background. We size to the largest height available and re-apply on
-      // resize/orientation/return so the iframe always reaches the screen bottom.
-      (function () {
-        var frame = document.getElementById('appFrame');
-        function fitFrame() {
-          if (!frame) return;
-          var h = Math.max(
-            window.innerHeight || 0,
-            document.documentElement ? document.documentElement.clientHeight : 0,
-            (window.screen && window.screen.height) ? window.screen.height : 0
-          );
-          if (h > 0) frame.style.height = h + 'px';
-        }
-        fitFrame();
-        window.addEventListener('resize', fitFrame);
-        window.addEventListener('orientationchange', function(){ setTimeout(fitFrame, 200); });
-        window.addEventListener('pageshow', fitFrame);
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', fitFrame);
-      })();
-    </script>
 
     <script>
       (function () {
