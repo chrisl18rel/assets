@@ -295,20 +295,18 @@
         // Reload the app's data when the user comes back to it, so a relaunch or
         // returning from another app always shows current information, and a
         // session left idle for a while is never stale.
-        var IDLE_MS = 30 * 60 * 1000;     // refresh if away/idle 30+ minutes
-        var QUICK_GLANCE_MS = 3 * 1000;   // ignore very brief app-switches
+        var IDLE_MS = 60 * 60 * 1000;     // refresh only after 1 hour idle
         var hiddenAt = null;
         var lastRefresh = Date.now();
 
+        // We do NOT refresh just because the app was switched away from and
+        // returned to — that was jarring. The only automatic refresh is when
+        // the app has been open/idle for over an hour; otherwise the user pulls
+        // down to refresh manually.
         function maybeRefreshOnReturn() {
           if (refreshing) return;
           var now = Date.now();
-          var awayFor = hiddenAt ? (now - hiddenAt) : 0;
-          var sinceRefresh = now - lastRefresh;
-
-          // Refresh if: returned after being away more than a quick glance,
-          // OR the session has simply been open/idle past the idle threshold.
-          if (awayFor > QUICK_GLANCE_MS || sinceRefresh > IDLE_MS) {
+          if (now - lastRefresh > IDLE_MS) {
             lastRefresh = now;
             doRefresh();
           }
