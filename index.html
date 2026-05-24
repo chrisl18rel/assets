@@ -47,7 +47,7 @@
 
     <!-- Launch full-screen (no Safari chrome) when opened from the home screen -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Retro Revival">
     <style>
       :root {
@@ -105,10 +105,10 @@
          progress JS expands it full-screen so the drag keeps registering. */
       #ptrZone {
         position: fixed;
-        top: env(safe-area-inset-top, 44px);
+        top: 0;
         left: 0;
         right: 0;
-        height: 95px;
+        height: 24px;
         z-index: 10;
         background: transparent;
       }
@@ -151,7 +151,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.5</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.6</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
