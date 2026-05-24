@@ -63,12 +63,17 @@
         background: var(--cream);
         overflow: hidden;
       }
-      /* The iframe fills the entire viewport with no chrome of its own. */
+      /* The iframe fills the viewport, but stops short of the very bottom by the
+         safe-area inset so the beige wrapper background shows as a bottom band
+         (mirroring the top) and clears the home indicator. */
       #appFrame {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
         width: 100%;
-        height: 100%;
+        height: auto;
         border: 0;
         display: block;
       }
@@ -151,7 +156,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.6</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.7</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
