@@ -63,16 +63,17 @@
         background: var(--cream);
         overflow: hidden;
       }
-      /* The iframe fills the viewport, but stops short of the very bottom by the
-         safe-area inset so the beige wrapper background shows as a bottom band
-         (mirroring the top) and clears the home indicator. */
+      /* Leave a beige band at the bottom: the body reserves space with
+         padding-bottom (border-box so it shrinks the content area), and the
+         iframe fills that reduced area at height:100%. */
+      body {
+        box-sizing: border-box;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      }
       #appFrame {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        position: relative;
         width: 100%;
+        height: 100%;
         border: 0;
         display: block;
       }
@@ -155,7 +156,7 @@
     </style>
   </head>
   <body>
-    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.8</span></div>
+    <div id="loading">Loading Retro Revival Inventory… <span style="opacity:0.7;">v.1.9</span></div>
 
     <!-- Pull-to-refresh gesture catcher + indicator -->
     <div id="ptrZone"></div>
